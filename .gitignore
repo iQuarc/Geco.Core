@@ -23,6 +23,7 @@ bld/
 [Oo]bj/
 [Gg]enerated/
 [Gg]enerated[Mm]odel/
+[Ll]ogs/
 
 # Visual Studio 2015 cache/options directory
 .vs/
