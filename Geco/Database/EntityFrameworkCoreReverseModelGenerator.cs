@@ -30,7 +30,7 @@ namespace Geco.Database
 
         protected override void Generate()
         {
-            IgnoreUnsuportedColumns();
+            IgnoreUnsupportedColumns();
             FilterTables();
             WriteEntityFiles();
             WriteContextFile();
@@ -59,7 +59,7 @@ namespace Geco.Database
 
         private void WriteContextFile()
         {
-            using (BeginFile($"{options.ContextName ?? Inf.Pascalise(Db.Name)}.cs"))
+            using (BeginFile($"{options.ContextName ?? Inf.Pascalise(Db.Name)}.Context.cs"))
             using (WriteHeader())
             {
                 W($"[GeneratedCode(\"Geco\", \"{Assembly.GetEntryAssembly().GetName().Version}\")]",
@@ -170,7 +170,8 @@ namespace Geco.Database
                 var className = table.Metadata["Class"];
                 var plural = Inf.Pluralise(className);
                 table.Metadata["DbSet"] = plural;
-                W($"public virtual DbSet<{className}> {plural} {{ get; set; }}");
+                W($"public virtual DbSet<{className}> {plural} {{ get; set; }}", options.AdvancedGeneration == false);
+                W($"public virtual DbSet<{className}> {plural} => Set<{className}>();", options.AdvancedGeneration);
             }
         }
 
@@ -245,8 +246,8 @@ namespace Geco.Database
                         foreach (var column in fk.FromColumns) column.Metadata["NavProperty"] = propertyName;
                         W("[JsonIgnore]", options.JsonSerialization);
                         W($"public {targetClassName} {propertyName} {{ get; set; }}");
+                        WP($" //{Pluralize("Column", fk.FromColumns)}: {CommaJoin(fk.FromColumns, c => c.Name)}, FK: {fk.Name}", options.GenerateComments);
                     }
-
                     W();
                 }
 
@@ -329,7 +330,7 @@ namespace Geco.Database
                         IW($".HasColumnName(\"{column.Name}\")");
                         W($".HasColumnType(\"{GetColumnType(column)}\")");
                         if (!string.IsNullOrEmpty(column.DefaultValue))
-                            W($".HasDefaultValueSql(\"{RemoveExtraParantesis(column.DefaultValue)}\")");
+                            W($".HasDefaultValueSql(\"{RemoveExtraParenthesis(column.DefaultValue)}\")");
                         if (IsString(column.DataType) && !column.IsNullable) W(".IsRequired()");
                         if (IsString(column.DataType) && column.MaxLength != -1)
                             W($".HasMaxLength({column.MaxLength})");
@@ -454,14 +455,14 @@ namespace Geco.Database
             return column.DataType;
         }
 
-        private string RemoveExtraParantesis(string stringValue)
+        private string RemoveExtraParenthesis(string stringValue)
         {
             if (stringValue.StartsWith("(") && stringValue.EndsWith(")"))
-                return RemoveExtraParantesis(stringValue.Substring(1, stringValue.Length - 2));
+                return RemoveExtraParenthesis(stringValue.Substring(1, stringValue.Length - 2));
             return stringValue;
         }
 
-        private void IgnoreUnsuportedColumns()
+        private void IgnoreUnsupportedColumns()
         {
             foreach (var schema in Db.Schemas)
             foreach (var table in schema.Tables)

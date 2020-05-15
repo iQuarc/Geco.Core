@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Humanizer;
 
 namespace Geco.Common
 {
@@ -100,7 +101,7 @@ namespace Geco.Common
         }
 
         /// <summary>
-        ///     Write comma , on the previous line if a new line is written
+        ///     Write comma , on the previous line if a new line is written with the same indent. Changing indent removes comma.
         /// </summary>
         protected void CommaIfNewLine()
         {
@@ -164,6 +165,20 @@ namespace Geco.Common
         }
 
         /// <summary>
+        ///     Write on Previous line
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="write"></param>
+        protected void WP(string text, bool write = true)
+        {
+            if (write)
+            {
+                _tw.Write(text);
+                if (OutputToConsole) Console.Write(text);
+            }
+        }
+
+        /// <summary>
         ///     Write line with current indent
         /// </summary>
         /// <param name="text">The text to write</param>
@@ -207,6 +222,7 @@ namespace Geco.Common
         protected void Indent()
         {
             _indent++;
+            commaNewLine = false;
         }
 
         /// <summary>
@@ -215,16 +231,37 @@ namespace Geco.Common
         protected void Dedent()
         {
             _indent--;
+            commaNewLine = false;
         }
 
+        /// <summary>
+        ///     Returns a string with comma joined values
+        /// </summary>
         protected string CommaJoin(IEnumerable<string> values)
         {
             return string.Join(", ", values);
         }
 
+        /// <summary>
+        ///     Returns a string with comma joined values
+        /// </summary>
         protected string CommaJoin<T>(IEnumerable<T> values, Func<T, string> selector)
         {
             return string.Join(", ", values.Select(selector));
+        }
+
+        /// <summary>
+        /// Pluralizes the input term if collection contains more than one element
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="inputTern">The input term singular</param>
+        /// <param name="collection">The collection that determines the pluralization</param>
+        /// <returns>The inputTerm pluralized if collection has more than 1 element, inputTerm unchanged otherwise</returns>
+        public string Pluralize<T>(string inputTern, IReadOnlyCollection<T> collection)
+        {
+            if (collection?.Count > 1)
+                return inputTern.Pluralize();
+            return inputTern;
         }
 
         protected IDisposable OnBlockEnd(Action action = null, bool write = true)
