@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics;
 using Geco.Common.SimpleMetadata;
+using Geco.Common.Util;
 
 namespace Geco.Common.MetadataProviders
 {

@@ -2,7 +2,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
-namespace Geco.Common
+namespace Geco.Common.Util
 {
     public static class ColorConsole
     {

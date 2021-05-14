@@ -1,7 +1,9 @@
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Geco.Database
 {
+    [SuppressMessage("ReSharper", "CollectionNeverUpdated.Global")]
     public class EntityFrameworkCoreReverseModelGeneratorOptions
     {
         public string ConnectionName { get; set; }

@@ -18,15 +18,15 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using Geco.Common;
-using Geco.Common.MetadataProviders.SqlServer;
-using Geco.Common.SimpleMetadata;
+using Geco.Common.Util;
 using Geco.Config;
 using Microsoft.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using static Geco.Common.ColorConsole;
+using static Geco.Common.Util.ColorConsole;
 using static System.ConsoleColor;
 
 namespace Geco
@@ -42,13 +42,16 @@ namespace Geco
     ///     in order to have the options be read from the <c>appsettings.json</c> configuration file and registered in the
     ///     <see cref="Microsoft.Extensions.DependencyInjection.ServiceCollection" />
     /// </remarks>
-    public class Program
+    public class Program : ITaskRunner
     {
+        private const int TaskMaxNestingLevel = 50;
         private IConfigurationRoot configurationRoot;
+        private int nestingLevel;
         private RootConfig rootConfig;
         private Dictionary<string, Type> runnableTypes;
         private IServiceCollection serviceCollection;
         public bool Interactive { get; private set; }
+
 
         private static int Main(string[] args)
         {
@@ -161,11 +164,10 @@ namespace Geco
             serviceCollection = new ServiceCollection()
                 .AddLogging()
                 .AddSingleton(configurationRoot)
-                .AddOptions()
-                .AddSingleton<IMetadataProvider, SqlServerMetadataProvider>()
-                .AddSingleton<IInflector, HumanizerInflector>();
-
+                .AddSingleton<ITaskRunner>(this)
+                .AddOptions();
             ScanTasks();
+            ScanServices();
         }
 
         private static void WriteLogo()
@@ -220,6 +222,16 @@ namespace Geco
             }
         }
 
+        public void ScanServices()
+        {
+            var serviceTypes = Assembly.GetAssembly(typeof(Program))
+                .GetTypes()
+                .Select(t => new {Type = t, Attribute = t.GetCustomAttribute<ServiceAttribute>()})
+                .Where(x => x.Attribute?.ContractType != null && !x.Type.IsAbstract && !x.Type.IsGenericTypeDefinition && x.Type.GetConstructors().Any());
+            foreach (var serviceType in serviceTypes) 
+                serviceCollection.Add(new ServiceDescriptor(serviceType.Attribute.ContractType, serviceType.Type, serviceType.Attribute.Lifetime));
+        }
+
         private void RunTaskListFromConfig(string taskListName)
         {
             var taskList = new List<string>();
@@ -235,15 +247,17 @@ namespace Geco
                 if (task == null)
                 {
                     WriteLine(("*** Error: Task ", Red), ($" {taskName} ", Blue), ("not found!", Red));
-                    continue;
+                    break;
                 }
                 task.OutputToConsole = false;
-                RunTask(task);
+                if (!RunTask(task))
+                    break;
             }
         }
 
-        private void RunTask(TaskConfig itemInfo)
+        private bool RunTask(TaskConfig itemInfo, object options = null)
         {
+            var taskError = false;
             var sw = new Stopwatch();
             try
             {
@@ -252,17 +266,19 @@ namespace Geco
 
                 var taskType = runnableTypes[itemInfo.TaskClass];
                 var optionsAttribute = (OptionsAttribute) taskType.GetCustomAttribute(typeof(OptionsAttribute));
-                if (optionsAttribute != null)
+                if (optionsAttribute != null && options == null)
                 {
-                    var options = Activator.CreateInstance(optionsAttribute.OptionType);
+                    options = Activator.CreateInstance(optionsAttribute.OptionType);
                     configurationRoot.GetSection($"Tasks:{itemInfo.ConfigIndex}:Options").Bind(options);
                     serviceCollection.Replace(new ServiceDescriptor(optionsAttribute.OptionType, options));
                 }
 
-                using (var provider = serviceCollection.BuildServiceProvider())
+                if (options != null) serviceCollection.Replace(new ServiceDescriptor(options.GetType(), options));
+
+                using (var provider = serviceCollection.BuildServiceProvider(new ServiceProviderOptions {ValidateScopes = true}))
+                using (var scope = provider.CreateScope())
                 {
-                    sw.Start();
-                    var task = (IRunnable) provider.GetService(taskType);
+                    var task = (IRunnable) scope.ServiceProvider.GetService(taskType);
                     if (task is IOutputRunnable to)
                     {
                         to.OutputToConsole = itemInfo.OutputToConsole;
@@ -274,22 +290,26 @@ namespace Geco
                     if (task is IRunnableConfirmation co && Interactive)
                     {
                         sw.Stop();
-                        if (!co.GetUserConfirmation())
-                        {
-                            WriteLine(("*** Task was canceled ", Yellow), ($" {itemInfo.Name} ", Blue));
-                            return;
-                        }
+                        if (!co.GetUserConfirmation()) WriteLine(("*** Task was canceled ", Yellow), ($" {itemInfo.Name} ", Blue));
 
                         sw.Start();
                     }
 
                     try
                     {
-                        task.Run();
+                        if (Interlocked.Increment(ref nestingLevel) <= TaskMaxNestingLevel)
+                            task.Run();
+                        else
+                            WriteLine($"Error running {(itemInfo.Name, Blue)}: Error:{("Maximum Task nesting level was exceeded", Red)}", DarkRed);
                     }
                     catch (OperationCanceledException)
                     {
                         WriteLine(("*** Task was aborted ", Yellow), ($" {itemInfo.Name} ", Blue));
+                        taskError = true;
+                    }
+                    finally
+                    {
+                        Interlocked.Decrement(ref nestingLevel);
                     }
                 }
             }
@@ -297,12 +317,35 @@ namespace Geco
             {
                 WriteLine($"Error running {(itemInfo.Name, Blue)}: Error:{(ex.Message, Red)}", DarkRed);
                 WriteLine($"Detail: {ex}", DarkYellow);
+                taskError = true;
             }
 
             sw.Stop();
             WriteLine();
-            WriteLine(("Task", Yellow), ($" {itemInfo.Name} ", Blue), ("completed in", Yellow),
-                ($" {sw.ElapsedMilliseconds} ms", Green));
+            WriteLine(("Task", Yellow), ($" {itemInfo.Name} ", Blue), ("completed in", Yellow), ($" {sw.ElapsedMilliseconds} ms", Green));
+            return taskError;
+        }
+
+        void ITaskRunner.RunTask(string taskName, object config)
+        {
+            var task = rootConfig.Tasks.Find(t => t.Name == taskName);
+            if (task == null)
+            {
+                WriteLine(("*** Error: Task ", Red), ($" {taskName} ", Blue), ("not found!", Red));
+                return;
+            }
+
+            RunTask(task, config);
+        }
+
+        void ITaskRunner.RunTasks(IEnumerable<string> taskNames)
+        {
+            RunTasksList(taskNames);
+        }
+
+        void ITaskRunner.RunNamedTaskList(string taskListName)
+        {
+            RunTaskListFromConfig(taskListName);
         }
     }
 }

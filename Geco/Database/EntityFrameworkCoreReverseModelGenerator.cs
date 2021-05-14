@@ -4,7 +4,9 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using Geco.Common;
+using Geco.Common.Inflector;
 using Geco.Common.SimpleMetadata;
+using Geco.Common.Util;
 
 // ReSharper disable PossibleMultipleEnumeration
 
@@ -198,8 +200,7 @@ namespace Geco.Database
                         var propertyName = Inf.Pascalise(column.Name);
                         CheckClash(ref propertyName, existingNames, ref i);
                         column.Metadata["Property"] = propertyName;
-                        W(
-                            $"public {GetClrTypeName(column.DataType)}{GetNullable(column)} {propertyName} {{ get; set; }}");
+                        W($"public {GetClrTypeName(column.DataType)}{GetNullable(column)} {propertyName} {{ get; set; }}");
                     }
 
                     W();
@@ -215,8 +216,7 @@ namespace Geco.Database
                         var propertyName = Inf.Pascalise(column.Name);
                         CheckClash(ref propertyName, existingNames, ref i);
                         column.Metadata["Property"] = propertyName;
-                        W(
-                            $"public {GetClrTypeName(column.DataType)}{GetNullable(column)} {propertyName} {{ get; set; }}");
+                        W($"public {GetClrTypeName(column.DataType)}{GetNullable(column)} {propertyName} {{ get; set; }}");
                     }
 
                     W();
@@ -237,8 +237,7 @@ namespace Geco.Database
 
                         if (CheckClash(ref propertyName, existingNames, ref i))
                         {
-                            propertyName = Inf.Pascalise(Inf.Singularise(fk.TargetTable.Name)) +
-                                           GetFkName(fk.FromColumns);
+                            propertyName = Inf.Pascalise(Inf.Singularise(fk.TargetTable.Name)) + GetFkName(fk.FromColumns);
                             CheckClash(ref propertyName, existingNames, ref i);
                         }
 
@@ -494,10 +493,10 @@ namespace Geco.Database
 
             var tables = new HashSet<Table>(
                 Db.Schemas.SelectMany(s => s.Tables)
-                    .Where(t => (options.Tables.Any(n => Util.TableNameMaches(t, n)) ||
-                                 Util.TableNameMachesRegex(t, options.TablesRegex, true))
-                                && !options.ExcludedTables.Any(n => Util.TableNameMaches(t, n))
-                                && !Util.TableNameMachesRegex(t, options.ExcludedTablesRegex, false)));
+                    .Where(t => (options.Tables.Any(n => Util.Util.TableNameMaches(t, n)) ||
+                                 Util.Util.TableNameMachesRegex(t, options.TablesRegex, true))
+                                && !options.ExcludedTables.Any(n => Util.Util.TableNameMaches(t, n))
+                                && !Util.Util.TableNameMachesRegex(t, options.ExcludedTablesRegex, false)));
 
             foreach (var schema in Db.Schemas)
             foreach (var table in schema.Tables)

@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Geco.Common.Inflector;
+using Geco.Common.Util;
 using Humanizer;
 
 namespace Geco.Common

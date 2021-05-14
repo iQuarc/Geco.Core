@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Data.SqlClient;
 using Geco.Common;
+using Geco.Common.Inflector;
+using Geco.Common.Util;
 using Microsoft.Extensions.Configuration;
 using static System.ConsoleColor;
 

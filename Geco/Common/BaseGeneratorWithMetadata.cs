@@ -1,4 +1,5 @@
 ﻿using System;
+using Geco.Common.Inflector;
 using Geco.Common.SimpleMetadata;
 
 namespace Geco.Common

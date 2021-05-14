@@ -6,6 +6,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using Geco.Common.SimpleMetadata;
+using Geco.Common.Util;
 
 namespace Geco.Common.MetadataProviders
 {

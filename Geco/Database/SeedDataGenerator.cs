@@ -5,7 +5,9 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Geco.Common;
+using Geco.Common.Inflector;
 using Geco.Common.SimpleMetadata;
+using Geco.Common.Util;
 using Microsoft.Extensions.Configuration;
 
 namespace Geco.Database
@@ -41,10 +43,10 @@ namespace Geco.Database
             }
 
             var tables = Db.Schemas.SelectMany(s => s.Tables)
-                .Where(t => (options.Tables.Any(n => Util.TableNameMaches(t, n))
-                             || Util.TableNameMachesRegex(t, options.TablesRegex, true))
-                            && !options.ExcludedTables.Any(n => Util.TableNameMaches(t, n))
-                            && !Util.TableNameMachesRegex(t, options.ExcludedTablesRegex, false))
+                .Where(t => (options.Tables.Any(n => Util.Util.TableNameMaches(t, n))
+                             || Util.Util.TableNameMachesRegex(t, options.TablesRegex, true))
+                            && !options.ExcludedTables.Any(n => Util.Util.TableNameMaches(t, n))
+                            && !Util.Util.TableNameMachesRegex(t, options.ExcludedTablesRegex, false))
                 .OrderBy(t => t.Schema.Name + "." + t.Name).ToArray();
             TopologicalSort(tables);
             GenerateSeedFile(options.OutputFileName, tables);

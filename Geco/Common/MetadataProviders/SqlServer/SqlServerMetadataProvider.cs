@@ -3,10 +3,13 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data.Common;
 using System.Data.SqlClient;
+using Geco.Common.SimpleMetadata;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Geco.Common.MetadataProviders.SqlServer
 {
+    [Service(typeof(IMetadataProvider), ServiceLifetime.Scoped)]
     public class SqlServerMetadataProvider : MetadataProviderBase
     {
         private readonly IConfigurationRoot configurationRoot;

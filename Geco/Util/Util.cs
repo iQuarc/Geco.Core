@@ -2,7 +2,7 @@
 using System.Text.RegularExpressions;
 using Geco.Common.SimpleMetadata;
 
-namespace Geco
+namespace Geco.Util
 {
     public class Util
     {

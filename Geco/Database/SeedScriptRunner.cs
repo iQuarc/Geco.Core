@@ -5,9 +5,10 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using Geco.Common;
+using Geco.Common.Inflector;
 using Microsoft.Extensions.Configuration;
 using static System.ConsoleColor;
-using static Geco.Common.ColorConsole;
+using static Geco.Common.Util.ColorConsole;
 
 namespace Geco.Database
 {
