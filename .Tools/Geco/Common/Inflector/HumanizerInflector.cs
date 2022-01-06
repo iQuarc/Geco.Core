@@ -1,7 +1,9 @@
 ﻿using Humanizer;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace Geco.Common
+namespace Geco.Common.Inflector
 {
+    [Service(typeof(IInflector), ServiceLifetime.Singleton)]
     public class HumanizerInflector : IInflector
     {
         public string Pluralise(string word)
@@ -26,17 +28,17 @@ namespace Geco.Common
 
         public string Pascalise(string lowercaseAndUnderscoredWord)
         {
-            return lowercaseAndUnderscoredWord.Pascalize().Replace(" ", "");
+            return lowercaseAndUnderscoredWord.Humanize().Pascalize();
         }
 
         public string Camelise(string lowercaseAndUnderscoredWord)
         {
-            return lowercaseAndUnderscoredWord.Camelize().Replace(" ", "");
+            return lowercaseAndUnderscoredWord.Humanize(LetterCasing.LowerCase).Camelize().Replace(" ", "");
         }
 
         public string Underscore(string pascalCasedWord)
         {
-           return pascalCasedWord.Underscore().Replace(" ", "");
+            return pascalCasedWord.Underscore().Replace(" ", "");
         }
 
         public string Capitalise(string word)

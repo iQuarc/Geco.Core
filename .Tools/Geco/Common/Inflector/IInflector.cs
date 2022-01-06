@@ -1,4 +1,4 @@
-﻿namespace Geco.Common
+﻿namespace Geco.Common.Inflector
 {
     /// <summary>
     ///     Specifies the inflection contract.

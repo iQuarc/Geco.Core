@@ -1,6 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Linq;
-using Geco.Common.MetadataProviders;
 
 namespace Geco.Common.SimpleMetadata
 {
@@ -9,31 +7,39 @@ namespace Geco.Common.SimpleMetadata
     {
         public Table(string name, Schema schema)
         {
-            Name = name;
-            Schema = schema;
-            Indexes = new MetadataCollection<Index>(null, OnIndexRemove);
-            Triggers = new MetadataCollection<Trigger>(null, OnRemoveIndex);
+            Name                = name;
+            Schema              = schema;
+            FullyQualifiedName  = $"{schema.FullyQualifiedName}.[{name}]";
+            Indexes             = new MetadataCollection<DataBaseIndex>(null, OnIndexRemove);
+            Triggers            = new MetadataCollection<Trigger>(null, OnRemoveIndex);
             IncomingForeignKeys = new MetadataCollection<ForeignKey>(null, OnRemoveForeignKey);
-            ForeignKeys = new MetadataCollection<ForeignKey>(null, OnRemoveForeignKey);
-            Columns = new MetadataCollection<Column>(null, OnRemoveColumn);
+            ForeignKeys         = new MetadataCollection<ForeignKey>(null, OnRemoveForeignKey);
+            Columns             = new MetadataCollection<Column>(null, OnRemoveColumn);
+
+            Db.AddToIndex(this);
         }
 
         public override string Name { get; }
+        public override string FullyQualifiedName { get; }
+
         public Schema Schema { get; }
 
         public MetadataCollection<Column> Columns { get; }
         public MetadataCollection<ForeignKey> ForeignKeys { get; }
         public MetadataCollection<ForeignKey> IncomingForeignKeys { get; }
         public MetadataCollection<Trigger> Triggers { get; }
-        public MetadataCollection<Index> Indexes { get; }
+        public MetadataCollection<DataBaseIndex> Indexes { get; }
+
+        protected internal override IDatabaseMetadata Db => Schema.Db;
 
         protected override void OnRemove()
         {
-            Schema.Tables.GetWritable().Remove(this.Name);
+            Schema.Tables.GetWritable().Remove(Name);
             foreach (var foreignKey in ForeignKeys)
                 foreignKey.GetWritable().Remove();
             foreach (var incomingForeignKey in IncomingForeignKeys)
                 incomingForeignKey.GetWritable().Remove();
+            Db.RemoveFromIndex(this);
         }
 
         private void OnRemoveIndex(Trigger trigger)
@@ -51,7 +57,7 @@ namespace Geco.Common.SimpleMetadata
             foreignKey.GetWritable().Remove();
         }
 
-        private void OnIndexRemove(Index index)
+        private void OnIndexRemove(DataBaseIndex index)
         {
             index.GetWritable().Remove();
         }

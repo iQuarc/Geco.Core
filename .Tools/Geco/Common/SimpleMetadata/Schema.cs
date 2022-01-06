@@ -1,20 +1,28 @@
-﻿using System.Diagnostics;
-using System.Linq;
+﻿using System.Collections;
+using System.Diagnostics;
 
 namespace Geco.Common.SimpleMetadata
 {
     [DebuggerDisplay("[{Name}]")]
     public class Schema : MetadataItem
     {
-        public Schema(string name)
+        public Schema(string name, IDatabaseMetadata db)
         {
-            Name = name;
-            Tables = new MetadataCollection<Table>(OnAdd, OnRemove);
+            Name               = name;
+            Db                 = db;
+            FullyQualifiedName = $"[{name}]";
+            Tables             = new MetadataCollection<Table>(OnAdd, OnRemove);
+            db.AddToIndex(this);
         }
+
+        public override string Name { get; }
+        public override string FullyQualifiedName { get; }
+        protected internal override IDatabaseMetadata Db { get; }
+
+        public MetadataCollection<Table> Tables { get; }
 
         private void OnAdd(Table table)
         {
-            
         }
 
         private void OnRemove(Table table)
@@ -26,15 +34,19 @@ namespace Geco.Common.SimpleMetadata
                 foreach (var fkToColumn in fk.ToColumns)
                     fkToColumn.ForeignKey = null;
             }
+
             foreach (var fk in table.IncomingForeignKeys)
             {
                 fk.ParentTable.ForeignKeys.GetWritable().Remove(fk.Name);
                 foreach (var fkToColumn in fk.FromColumns)
                     fkToColumn.ForeignKey = null;
             }
+            
         }
 
-        public override string Name { get; }
-        public MetadataCollection<Table> Tables { get; }
+        protected override void OnRemove()
+        {
+            Db.RemoveFromIndex(this);
+        }
     }
 }

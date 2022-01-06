@@ -1,7 +1,9 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Geco.Database
 {
+    [SuppressMessage("ReSharper", "CollectionNeverUpdated.Global")]
     public class SeedDataGeneratorOptions
     {
         public string ConnectionName { get; set; }
@@ -11,5 +13,7 @@ namespace Geco.Database
         public List<string> ExcludedTables { get; } = new List<string>();
         public string ExcludedTablesRegex { get; set; }
         public int ItemsPerStatement { get; set; } = 1000;
+        public string FilterTemplate { get; set; }
+        public bool Compressed { get; set; } = false;
     }
 }
