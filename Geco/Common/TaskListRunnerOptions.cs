@@ -1,9 +1,5 @@
-﻿using System.Collections.Generic;
+﻿namespace Geco.Common;
 
-namespace Geco.Common
+public class TaskListRunnerOptions : List<string>
 {
-    public class TaskListRunnerOptions : List<string>
-    {
-        
-    }
 }

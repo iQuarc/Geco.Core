@@ -1,19 +1,10 @@
-﻿using System;
+﻿namespace Geco.Common.Templates;
 
-namespace Geco.Common.Templates
+/// <summary>
+///    Identifies a generator template
+/// </summary>
+[AttributeUsage(AttributeTargets.Class)]
+public class TemplateAttribute(string templateName) : ServiceAttribute(typeof(IDbTemplate))
 {
-    /// <summary>
-    /// Identifies a generator template
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Class)]
-    public class TemplateAttribute : ServiceAttribute
-    {
-        public string TemplateName { get; }
-
-        public TemplateAttribute(string templateName)
-            :base(typeof(IDbTemplate))
-        {
-            TemplateName = templateName;
-        }
-    }
+   public string TemplateName { get; } = templateName;
 }

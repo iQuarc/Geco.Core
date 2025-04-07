@@ -1,7 +1,8 @@
 {
-    "profiles": {
-        "Geco": {
-            "commandName": "Project"
-        }
+  "profiles": {
+    "Geco": {
+      "commandName": "Project"
     }
+  }
+
 }
